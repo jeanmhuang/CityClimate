@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>City Climate Adaptation Planner - Climate Education Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+        }
+        
+        .header h1 { font-size: 36px; margin-bottom: 10px; }
+        .header p { font-size: 18px; opacity: 0.9; }
+        
+        .game-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .panel {
+            padding: 20px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 15px;
+            border: 3px solid;
+        }
+        
+        .panel-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .stat-item {
+            padding: 15px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+        
+        .stat-bar {
+            margin-top: 8px;
+            height: 10px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .stat-bar-fill {
+            height: 100%;
+            transition: width 0.3s ease, background-color 0.3s ease;
+            border-radius: 5px;
+        }
+        
+        .city-map {
+            padding: 20px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 15px;
+            border: 3px solid #3b82f6;
+        }
+        
+        .map-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .map-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .turn-info {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+        }
+        
+        .grid-cell {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.2s ease;
+            border: 2px solid rgba(255,255,255,0.3);
+            position: relative;
+        }
+        
+        .grid-cell:hover {
+            transform: scale(1.05);
+            border-color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .grid-cell.residential { background: #fbbf24; }
+        .grid-cell.commercial { background: #f97316; }
+        .grid-cell.waterfront { background: #3b82f6; }
+        .grid-cell.park { background: #22c55e; }
+        .grid-cell.flooded {
+            background: #1e40af !important;
+            animation: flood 1s ease;
+        }
+        .grid-cell.overheated {
+            background: #dc2626 !important;
+            animation: heat 1s ease;
+        }
+        
+        @keyframes flood {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        @keyframes heat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .cell-icon {
+            font-size: 20px;
+            margin-bottom: 2px;
+        }
+        
+        .cell-label {
+            font-size: 10px;
+            color: rgba(255,255,255,0.9);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .adaptation-item {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 14px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .adaptations-panel {
+            border-color: #22c55e;
+        }
+        
+        .adaptation-option {
+            padding: 15px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+        
+        .adaptation-option:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateX(5px);
+        }
+        
+        .adaptation-option.selected {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.3);
+        }
+        
+        .adaptation-option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .adaptation-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .adaptation-cost {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        
+        .adaptation-benefit {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary {
+            background: #22c55e;
+            color: #1f2937;
+        }
+        
+        .btn-primary:disabled {
+            background: #6b7280;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .event-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .event-modal.hidden {
+            display: none;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 600px;
+            border: 4px solid white;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .event-icon {
+            font-size: 72px;
+            margin-bottom: 20px;
+        }
+        
+        .event-title {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .event-description {
+            font-size: 18px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        
+        .event-impact {
+            padding: 20px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+        
+        .impact-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .impact-item {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+        
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            border: 2px solid white;
+        }
+        
+        .info-box {
+            padding: 15px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        @media (max-width: 1200px) {
+            .game-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .grid-container {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .header h1 {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌊 City Climate Adaptation Planner</h1>
+            <p>Protect your coastal city from climate change impacts!</p>
+        </div>
+
+        <div class="game-layout">
+            <!-- Left Panel: Stats -->
+            <div class="panel" style="border-color: #3b82f6;">
+                <div class="panel-title">📊 City Stats</div>
+                
+                <div class="stat-item">
+                    <div class="stat-label">Budget</div>
+                    <div class="stat-value">$<span id="budget">1000</span>k</div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-label">Resilience Score</div>
+                    <div class="stat-value"><span id="resilience">50</span>%</div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-fill" id="resilience-bar" style="width: 50%; background: #22c55e;"></div>
+                    </div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-label">Population Affected</div>
+                    <div class="stat-value"><span id="affected">0</span></div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-label">Turn</div>
+                    <div class="stat-value"><span id="turn">1</span> / 10</div>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #fbbf24;"></div>
+                        <span>Residential</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f97316;"></div>
+                        <span>Commercial</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #3b82f6;"></div>
+                        <span>Waterfront</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #22c55e;"></div>
+                        <span>Park</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center: City Map -->
+            <div class="city-map">
+                <div class="map-header">
+                    <div class="map-title">🏙️ Coastal City</div>
+                    <div class="turn-info">Select a location and add adaptation infrastructure</div>
+                </div>
+                
+                <div class="grid-container" id="city-grid"></div>
+
+                <div class="info-box">
+                    💡 <strong>Tip:</strong> Protect waterfront areas from flooding with seawalls, add green infrastructure for heat, and create cooling centers for vulnerable populations.
+                </div>
+            </div>
+
+            <!-- Right Panel: Adaptations -->
+            <div class="panel adaptations-panel">
+                <div class="panel-title">🛠️ Adaptations</div>
+                
+                <div id="adaptations-list"></div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="build-btn" disabled>Build Selected</button>
+                    <button class="btn btn-secondary" id="next-turn-btn">Next Turn →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Modal -->
+    <div class="event-modal hidden" id="event-modal">
+        <div class="modal-content">
+            <div class="event-icon" id="event-icon">🌊</div>
+            <div class="event-title" id="event-title">Climate Event!</div>
+            <div class="event-description" id="event-description"></div>
+            <div class="event-impact">
+                <div class="impact-title">Impact:</div>
+                <div id="event-impact"></div>
+            </div>
+            <button class="btn btn-primary" onclick="closeEventModal()">Continue</button>
+        </div>
+    </div>
+
+    <script>
+        const adaptationTypes = [
+            {
+                id: 'seawall',
+                name: 'Seawall',
+                icon: '🌊',
+                cost: 150,
+                floodProtection: 40,
+                heatProtection: 0,
+                description: 'Protects against coastal flooding',
+                validZones: ['waterfront']
+            },
+            {
+                id: 'greenroof',
+                name: 'Green Roof',
+                icon: '🌿',
+                cost: 80,
+                floodProtection: 10,
+                heatProtection: 30,
+                description: 'Reduces heat and absorbs rainwater',
+                validZones: ['residential', 'commercial']
+            },
+            {
+                id: 'bioswale',
+                name: 'Bioswale',
+                icon: '🌱',
+                cost: 60,
+                floodProtection: 25,
+                heatProtection: 15,
+                description: 'Natural drainage and cooling',
+                validZones: ['residential', 'commercial', 'park']
+            },
+            {
+                id: 'coolingcenter',
+                name: 'Cooling Center',
+                icon: '❄️',
+                cost: 100,
+                floodProtection: 0,
+                heatProtection: 50,
+                description: 'Refuge during heat waves',
+                validZones: ['residential', 'commercial']
+            },
+            {
+                id: 'perviouspave',
+                name: 'Pervious Pavement',
+                icon: '🚶',
+                cost: 70,
+                floodProtection: 20,
+                heatProtection: 20,
+                description: 'Absorbs water, reduces heat island',
+                validZones: ['residential', 'commercial']
+            },
+            {
+                id: 'urbantrees',
+                name: 'Urban Trees',
+                icon: '🌳',
+                cost: 50,
+                floodProtection: 15,
+                heatProtection: 35,
+                description: 'Shade and water absorption',
+                validZones: ['residential', 'commercial', 'park']
+            },
+            {
+                id: 'raingardens',
+                name: 'Rain Gardens',
+                icon: '🌺',
+                cost: 40,
+                floodProtection: 30,
+                heatProtection: 10,
+                description: 'Captures and filters stormwater',
+                validZones: ['residential', 'park']
+            },
+            {
+                id: 'wetland',
+                name: 'Constructed Wetland',
+                icon: '🦆',
+                cost: 120,
+                floodProtection: 35,
+                heatProtection: 20,
+                description: 'Natural flood buffer and habitat',
+                validZones: ['waterfront', 'park']
+            }
+        ];
+
+        const climateEvents = [
+            {
+                type: 'flood',
+                name: 'Coastal Storm Surge',
+                icon: '🌊',
+                description: 'A powerful storm brings high tides and flooding to the waterfront!',
+                targetZones: ['waterfront'],
+                damagePerCell: 50,
+                protectionType: 'floodProtection'
+            },
+            {
+                type: 'flood',
+                name: 'Heavy Rainfall',
+                icon: '🌧️',
+                description: 'Intense rainfall overwhelms drainage systems across the city!',
+                targetZones: ['residential', 'commercial'],
+                damagePerCell: 30,
+                protectionType: 'floodProtection'
+            },
+            {
+                type: 'heat',
+                name: 'Extreme Heat Wave',
+                icon: '🌡️',
+                description: 'Record-breaking temperatures endanger vulnerable populations!',
+                targetZones: ['residential', 'commercial'],
+                damagePerCell: 40,
+                protectionType: 'heatProtection'
+            },
+            {
+                type: 'heat',
+                name: 'Urban Heat Island',
+                icon: '🔥',
+                description: 'Concrete and asphalt create dangerous heat concentrations!',
+                targetZones: ['commercial'],
+                damagePerCell: 35,
+                protectionType: 'heatProtection'
+            }
+        ];
+
+        let gameState = {
+            budget: 1000,
+            turn: 1,
+            maxTurns: 10,
+            totalAffected: 0,
+            selectedCell: null,
+            selectedAdaptation: null,
+            cityGrid: [],
+            resilienceScore: 50
+        };
+
+        function initGame() {
+            createCityGrid();
+            renderAdaptations();
+            renderStats();
+        }
+
+        function createCityGrid() {
+            const grid = document.getElementById('city-grid');
+            grid.innerHTML = '';
+            
+            const zones = [
+                ['residential', 'residential', 'park', 'commercial', 'commercial', 'residential', 'residential', 'park'],
+                ['residential', 'residential', 'residential', 'commercial', 'commercial', 'commercial', 'residential', 'residential'],
+                ['residential', 'park', 'residential', 'commercial', 'park', 'commercial', 'commercial', 'residential'],
+                ['waterfront', 'waterfront', 'residential', 'residential', 'commercial', 'commercial', 'waterfront', 'waterfront'],
+                ['waterfront', 'waterfront', 'waterfront', 'residential', 'residential', 'waterfront', 'waterfront', 'waterfront'],
+                ['waterfront', 'waterfront', 'waterfront', 'park', 'park', 'waterfront', 'waterfront', 'waterfront']
+            ];
+
+            zones.forEach((row, rowIndex) => {
+                row.forEach((zone, colIndex) => {
+                    const cell = document.createElement('div');
+                    cell.className = `grid-cell ${zone}`;
+                    cell.dataset.row = rowIndex;
+                    cell.dataset.col = colIndex;
+                    cell.dataset.zone = zone;
+                    
+                    const icon = document.createElement('div');
+                    icon.className = 'cell-icon';
+                    icon.textContent = getZoneIcon(zone);
+                    cell.appendChild(icon);
+
+                    cell.addEventListener('click', () => selectCell(rowIndex, colIndex));
+                    
+                    grid.appendChild(cell);
+                    
+                    gameState.cityGrid.push({
+                        row: rowIndex,
+                        col: colIndex,
+                        zone: zone,
+                        adaptation: null,
+                        population: zone === 'residential' ? 100 : zone === 'commercial' ? 50 : 0
+                    });
+                });
+            });
+        }
+
+        function getZoneIcon(zone) {
+            const icons = {
+                'residential': '🏘️',
+                'commercial': '🏢',
+                'waterfront': '⚓',
+                'park': '🌳'
+            };
+            return icons[zone] || '📍';
+        }
+
+        function selectCell(row, col) {
+            // Remove previous selection
+            document.querySelectorAll('.grid-cell').forEach(cell => {
+                cell.style.border = '2px solid rgba(255,255,255,0.3)';
+            });
+
+            // Highlight selected cell
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            cell.style.border = '3px solid #22c55e';
+            
+            gameState.selectedCell = { row, col };
+            updateBuildButton();
+        }
+
+        function renderAdaptations() {
+            const list = document.getElementById('adaptations-list');
+            list.innerHTML = '';
+
+            adaptationTypes.forEach(adaptation => {
+                const div = document.createElement('div');
+                div.className = 'adaptation-option';
+                if (gameState.budget < adaptation.cost) {
+                    div.classList.add('disabled');
+                }
+                if (gameState.selectedAdaptation?.id === adaptation.id) {
+                    div.classList.add('selected');
+                }
+
+                div.innerHTML = `
+                    <div class="adaptation-name">
+                        <span>${adaptation.icon}</span>
+                        <span>${adaptation.name}</span>
+                    </div>
+                    <div class="adaptation-cost">💰 $${adaptation.cost}k</div>
+                    <div class="adaptation-benefit">${adaptation.description}</div>
+                `;
+
+                if (gameState.budget >= adaptation.cost) {
+                    div.addEventListener('click', () => selectAdaptation(adaptation));
+                }
+
+                list.appendChild(div);
+            });
+        }
+
+        function selectAdaptation(adaptation) {
+            gameState.selectedAdaptation = adaptation;
+            renderAdaptations();
+            updateBuildButton();
+        }
+
+        function updateBuildButton() {
+            const btn = document.getElementById('build-btn');
+            const canBuild = gameState.selectedCell && gameState.selectedAdaptation;
+            btn.disabled = !canBuild;
+            
+            if (canBuild) {
+                const cellIndex = gameState.selectedCell.row * 8 + gameState.selectedCell.col;
+                const cell = gameState.cityGrid[cellIndex];
+                
+                if (cell.adaptation) {
+                    btn.textContent = 'Cell Already Protected';
+                    btn.disabled = true;
+                } else if (!gameState.selectedAdaptation.validZones.includes(cell.zone)) {
+                    btn.textContent = 'Invalid Zone';
+                    btn.disabled = true;
+                } else {
+                    btn.textContent = `Build ${gameState.selectedAdaptation.name} - $${gameState.selectedAdaptation.cost}k`;
+                }
+            }
+        }
+
+        document.getElementById('build-btn').addEventListener('click', buildAdaptation);
+        document.getElementById('next-turn-btn').addEventListener('click', nextTurn);
+
+        function buildAdaptation() {
+            if (!gameState.selectedCell || !gameState.selectedAdaptation) return;
+
+            const cellIndex = gameState.selectedCell.row * 8 + gameState.selectedCell.col;
+            const cell = gameState.cityGrid[cellIndex];
+
+            if (cell.adaptation) return;
+            if (!gameState.selectedAdaptation.validZones.includes(cell.zone)) return;
+            if (gameState.budget < gameState.selectedAdaptation.cost) return;
+
+            // Build the adaptation
+            gameState.budget -= gameState.selectedAdaptation.cost;
+            cell.adaptation = gameState.selectedAdaptation;
+
+            // Update visual
+            const cellElement = document.querySelector(`[data-row="${cell.row}"][data-col="${cell.col}"]`);
+            const adaptIcon = document.createElement('div');
+            adaptIcon.className = 'adaptation-item';
+            adaptIcon.textContent = gameState.selectedAdaptation.icon;
+            cellElement.appendChild(adaptIcon);
+
+            // Clear selection
+            gameState.selectedCell = null;
+            gameState.selectedAdaptation = null;
+            document.querySelectorAll('.grid-cell').forEach(cell => {
+                cell.style.border = '2px solid rgba(255,255,255,0.3)';
+            });
+
+            renderAdaptations();
+            renderStats();
+            updateBuildButton();
+        }
+
+        function nextTurn() {
+            if (gameState.turn >= gameState.maxTurns) {
+                endGame();
+                return;
+            }
+
+            gameState.turn++;
+
+            // Trigger climate event every 2-3 turns
+            if (gameState.turn % 2 === 0 || Math.random() > 0.5) {
+                triggerClimateEvent();
+            }
+
+            renderStats();
+        }
+
+        function triggerClimateEvent() {
+            const event = climateEvents[Math.floor(Math.random() * climateEvents.length)];
+            
+            let affectedCells = 0;
+            let protectedCells = 0;
+            let totalDamage = 0;
+
+            // Find cells in target zones
+            gameState.cityGrid.forEach(cell => {
+                if (event.targetZones.includes(cell.zone)) {
+                    affectedCells++;
+                    
+                    if (cell.adaptation) {
+                        const protection = cell.adaptation[event.protectionType] || 0;
+                        const damage = Math.max(0, event.damagePerCell - (event.damagePerCell * protection / 100));
+                        totalDamage += damage;
+                        
+                        if (damage < event.damagePerCell * 0.5) {
+                            protectedCells++;
+                        }
+                    } else {
+                        totalDamage += event.damagePerCell;
+                    }
+
+                    // Visual effect
+                    const cellElement = document.querySelector(`[data-row="${cell.row}"][data-col="${cell.col}"]`);
+                    if (event.type === 'flood') {
+                        cellElement.classList.add('flooded');
+                        setTimeout(() => cellElement.classList.remove('flooded'), 1500);
+                    } else {
+                        cellElement.classList.add('overheated');
+                        setTimeout(() => cellElement.classList.remove('overheated'), 1500);
+                    }
+                }
+            });
+
+            gameState.totalAffected += Math.round(totalDamage);
+
+            showEventModal(event, affectedCells, protectedCells, Math.round(totalDamage));
+        }
+
+        function showEventModal(event, affected, protected, damage) {
+            document.getElementById('event-icon').textContent = event.icon;
+            document.getElementById('event-title').textContent = event.name;
+            document.getElementById('event-description').textContent = event.description;
+            
+            const impactHTML = `
+                <div class="impact-item">📍 Zones Affected: ${affected}</div>
+                <div class="impact-item">✅ Protected: ${protected} / ${affected}</div>
+                <div class="impact-item">👥 People Impacted: ${damage}</div>
+            `;
+            document.getElementById('event-impact').innerHTML = impactHTML;
+            
+            document.getElementById('event-modal').classList.remove('hidden');
+        }
+
+        function closeEventModal() {
+            document.getElementById('event-modal').classList.add('hidden');
+        }
+
+        function renderStats() {
+            document.getElementById('budget').textContent = gameState.budget;
+            document.getElementById('turn').textContent = gameState.turn;
+            document.getElementById('affected').textContent = gameState.totalAffected;
+
+            // Calculate resilience score
+            let totalProtection = 0;
+            let cellsWithAdaptation = 0;
+            
+            gameState.cityGrid.forEach(cell => {
+                if (cell.adaptation) {
+                    cellsWithAdaptation++;
+                    totalProtection += cell.adaptation.floodProtection + cell.adaptation.heatProtection;
+                }
+            });
+
+            const resilienceScore = Math.min(100, Math.round(50 + (cellsWithAdaptation / gameState.cityGrid.length) * 100 + totalProtection / 10));
+            gameState.resilienceScore = resilienceScore;
+
+            document.getElementById('resilience').textContent = resilienceScore;
+            const resilienceBar = document.getElementById('resilience-bar');
+            resilienceBar.style.width = resilienceScore + '%';
+            
+            if (resilienceScore >= 80) {
+                resilienceBar.style.background = '#22c55e';
+            } else if (resilienceScore >= 60) {
+                resilienceBar.style.background = '#fbbf24';
+            } else {
+                resilienceBar.style.background = '#ef4444';
+            }
+        }
+
+        function endGame() {
+            let message = '';
+            const resilience = gameState.resilienceScore;
+            const affected = gameState.totalAffected;
+
+            if (resilience >= 80 && affected < 500) {
+                message = '🌟 Outstanding! Your city is highly resilient to climate impacts. Well done!';
+            } else if (resilience >= 60 && affected < 1000) {
+                message = '✅ Good job! Your city has decent protection, but there\'s room for improvement.';
+            } else if (resilience >= 40) {
+                message = '⚠️ Your city needs more climate adaptation. Many residents were affected by climate events.';
+            } else {
+                message = '❌ Your city is vulnerable to climate change. More investment in adaptation is critical!';
+            }
+
+            const impactHTML = `
+                <div class="impact-item">🛡️ Final Resilience: ${resilience}%</div>
+                <div class="impact-item">👥 Total People Affected: ${affected}</div>
+                <div class="impact-item">💰 Budget Remaining: $${gameState.budget}k</div>
+            `;
+
+            document.getElementById('event-icon').textContent = '🏆';
+            document.getElementById('event-title').textContent = 'Game Complete!';
+            document.getElementById('event-description').textContent = message;
+            document.getElementById('event-impact').innerHTML = impactHTML;
+            document.getElementById('event-modal').classList.remove('hidden');
+            
+            const btn = document.querySelector('#event-modal .btn');
+            btn.textContent = 'Play Again';
+            btn.onclick = () => location.reload();
+        }
+
+        initGame();
+    </script>
+
+    <!-- Educational Content Section -->
+    <div class="container">
+        <div class="education-section">
+            <h2 class="education-title">📚 Learn About Climate Adaptation & Resilience</h2>
+            
+            <div class="education-content">
+                <div class="education-block">
+                    <h3>🌊 What is Climate Adaptation?</h3>
+                    <p>Climate adaptation refers to actions that reduce the negative impacts of climate change, while taking advantage of potential opportunities. Unlike mitigation (reducing emissions), adaptation focuses on preparing for and responding to climate impacts that are already happening or will happen.</p>
+                    <p><strong>Key Difference:</strong></p>
+                    <ul>
+                        <li><strong>Mitigation:</strong> Reducing greenhouse gas emissions to slow climate change</li>
+                        <li><strong>Adaptation:</strong> Adjusting to current and future climate impacts</li>
+                    </ul>
+                    <p>Both are essential! We need mitigation to limit future warming AND adaptation to deal with changes already underway.</p>
+                </div>
+
+                <div class="education-block">
+                    <h3>🏙️ Why Cities Need Climate Adaptation</h3>
+                    <p>Cities are on the frontlines of climate change. By 2050, over 800 million people in 570 coastal cities will be vulnerable to a 0.5-meter sea level rise. Urban areas face multiple climate threats simultaneously:</p>
+                    <ul>
+                        <li><strong>Heat Waves:</strong> Urban heat islands make cities 5-7°F hotter than surrounding areas. Extreme heat kills more people than any other weather event.</li>
+                        <li><strong>Flooding:</strong> 90% of natural disasters involve flooding. Rising seas and intense storms threaten coastal cities.</li>
+                        <li><strong>Droughts:</strong> Water scarcity affects urban water supplies, especially in growing cities.</li>
+                        <li><strong>Storms:</strong> Hurricane intensity is increasing, with more Category 4-5 storms expected.</li>
+                    </ul>
+                    <p><strong>Economic Impact:</strong> Without adaptation, climate change could cost cities $314 billion annually by 2030. With investment in adaptation, every $1 spent can save $4 in future costs.</p>
+                </div>
+
+                <div class="education-block">
+                    <h3>🛠️ Types of Climate Adaptation</h3>
+                    
+                    <h4 style="margin-top: 20px; margin-bottom: 10px;">Gray Infrastructure (Built/Engineered)</h4>
+                    <ul>
+                        <li><strong>Seawalls & Levees:</strong> Physical barriers against flooding and storm surge</li>
+                        <li><strong>Flood Gates:</strong> Deployable barriers for extreme events</li>
+                        <li><strong>Storm Drains:</strong> Enhanced drainage systems for heavy rainfall</li>
+                        <li><strong>Cooling Centers:</strong> Air-conditioned public spaces during heat waves</li>
+                    </ul>
+                    <p><em>Pros:</em> Immediate protection, proven technology | <em>Cons:</em> Expensive, can harm ecosystems, requires maintenance</p>
+
+                    <h4 style="margin-top: 20px; margin-bottom: 10px;">Green Infrastructure (Nature-Based Solutions)</h4>
+                    <ul>
+                        <li><strong>Green Roofs:</strong> Vegetation on buildings reduces heat and absorbs rainwater</li>
+                        <li><strong>Urban Trees:</strong> Provide shade, reduce temperatures by 2-9°F, absorb stormwater</li>
+                        <li><strong>Bioswales & Rain Gardens:</strong> Landscaped channels that capture and filter stormwater</li>
+                        <li><strong>Wetlands:</strong> Natural sponges that absorb floodwaters and provide habitat</li>
+                        <li><strong>Pervious Pavement:</strong> Allows water to soak through instead of running off</li>
+                    </ul>
+                    <p><em>Pros:</em> Multiple benefits, lower cost, improves quality of life | <em>Cons:</em> Takes time to establish, needs space</p>
+
+                    <h4 style="margin-top: 20px; margin-bottom: 10px;">Social Adaptation</h4>
+                    <ul>
+                        <li><strong>Early Warning Systems:</strong> Alert systems for heat waves, floods, and storms</li>
+                        <li><strong>Emergency Response Plans:</strong> Coordinated plans for climate disasters</li>
+                        <li><strong>Community Education:</strong> Teaching residents about climate risks and preparedness</li>
+                        <li><strong>Social Safety Nets:</strong> Support for vulnerable populations during climate events</li>
+                    </ul>
+                </div>
+
+                <div class="education-block">
+                    <h3>🌍 Real-World Success Stories</h3>
+                    <div class="examples-grid">
+                        <div class="example-card">
+                            <div class="example-icon">🇳🇱</div>
+                            <h4>Rotterdam, Netherlands</h4>
+                            <p>Built water plazas that serve as public parks normally, but collect stormwater during floods. Also created floating pavilions and green roofs across 350,000 m² of buildings.</p>
+                        </div>
+                        <div class="example-card">
+                            <div class="example-icon">🇫🇷</div>
+                            <h4>Paris, France</h4>
+                            <p>Created 800+ "cool islands" - parks, fountains, and shaded areas where residents can find relief during heat waves. Plans to plant 170,000 trees by 2026.</p>
+                        </div>
+                        <div class="example-card">
+                            <div class="example-icon">🇸🇬</div>
+                            <h4>Singapore</h4>
+                            <p>Developed the "City in a Garden" concept with extensive green infrastructure, including the world's largest underground cooling system serving 40% of the city.</p>
+                        </div>
+                        <div class="example-card">
+                            <div class="example-icon">🇺🇸</div>
+                            <h4>New York City, USA</h4>
+                            <p>After Hurricane Sandy, NYC invested $20 billion in resilience, including a 2.4-mile seawall system and transforming 520 acres into parks that absorb storm surge.</p>
+                        </div>
+                        <div class="example-card">
+                            <div class="example-icon">🇨🇴</div>
+                            <h4>Medellín, Colombia</h4>
+                            <p>Created 30 "green corridors" along roadways with 880,000 plants and trees, reducing urban temperatures by 4°F and improving air quality.</p>
+                        </div>
+                        <div class="example-card">
+                            <div class="example-icon">🇧🇩</div>
+                            <h4>Dhaka, Bangladesh</h4>
+                            <p>Restored 3,000+ ponds to capture monsoon rains, preventing flooding while providing water storage for dry seasons. Low-cost solution that protects millions.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="education-block">
+                    <h3>💡 The Case for Green Infrastructure</h3>
+                    <p>Nature-based solutions offer multiple benefits beyond climate adaptation:</p>
+                    <div class="benefits-grid">
+                        <div class="benefit-item">
+                            <div class="benefit-icon">🌡️</div>
+                            <strong>Heat Reduction:</strong> Trees and vegetation can lower urban temperatures by 2-9°F, saving lives during heat waves.
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">💧</div>
+                            <strong>Flood Control:</strong> Green infrastructure can absorb 50-90% of stormwater, reducing flood damage.
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">🌬️</div>
+                            <strong>Air Quality:</strong> Trees remove 17.4 million tons of air pollution annually in the US, worth $6.8 billion.
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">💰</div>
+                            <strong>Cost Savings:</strong> Green roofs cost 50% less than traditional flood infrastructure per gallon managed.
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">😊</div>
+                            <strong>Mental Health:</strong> Urban green spaces reduce stress, depression, and improve overall wellbeing.
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">🐦</div>
+                            <strong>Biodiversity:</strong> Green infrastructure creates habitat for urban wildlife and supports ecosystems.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="education-block">
+                    <h3>🎯 What You Can Do</h3>
+                    <div class="action-grid">
+                        <div class="action-item">
+                            <div class="action-emoji">🗺️</div>
+                            <strong>Know Your Risk:</strong> Check flood maps and heat vulnerability in your area. Is your home in a floodplain?
+                        </div>
+                        <div class="action-item">
+                            <div class="action-emoji">🏠</div>
+                            <strong>Adapt Your Home:</strong> Install rain barrels, create a rain garden, or plant trees for shade and stormwater absorption.
+                        </div>
+                        <div class="action-item">
+                            <div class="action-emoji">📱</div>
+                            <strong>Get Alerts:</strong> Sign up for emergency weather alerts and have an emergency plan for your family.
+                        </div>
+                        <div class="action-item">
+                            <div class="action-emoji">👥</div>
+                            <strong>Check on Neighbors:</strong> During heat waves and floods, elderly and isolated neighbors need extra support.
+                        </div>
+                        <div class="action-item">
+                            <div class="action-emoji">🗳️</div>
+                            <strong>Advocate Locally:</strong> Push your city to invest in climate adaptation, especially nature-based solutions.
+                        </div>
+                        <div class="action-item">
+                            <div class="action-emoji">🌳</div>
+                            <strong>Plant Trees:</strong> Join tree-planting initiatives in your community. Every tree helps cool and protect your neighborhood.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="education-block">
+                    <h3>📊 Key Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-number">570</div>
+                            <div class="stat-label">Coastal cities at risk from sea level rise</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number">$4</div>
+                            <div class="stat-label">Saved for every $1 invested in adaptation</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number">800M</div>
+                            <div class="stat-label">People vulnerable to 0.5m sea level rise by 2050</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number">5-7°F</div>
+                            <div class="stat-label">Urban heat island effect in cities</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number">90%</div>
+                            <div class="stat-label">Of natural disasters involve flooding</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number">2-9°F</div>
+                            <div class="stat-label">Temperature reduction from urban trees</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="education-block">
+                    <h3>⚖️ Climate Justice & Adaptation</h3>
+                    <p>Climate impacts don't affect everyone equally. Vulnerable communities face greater risks:</p>
+                    <ul>
+                        <li><strong>Low-income neighborhoods</strong> often lack green space and have more heat-absorbing pavement, making them 5-10°F hotter.</li>
+                        <li><strong>Communities of color</strong> in the US are 40% more likely to live in areas with highest heat impacts.</li>
+                        <li><strong>Elderly residents</strong> are 4x more likely to die during heat waves due to limited mobility and health conditions.</li>
+                        <li><strong>Renters</strong> can't make home adaptations and face displacement after climate disasters.</li>
+                    </ul>
+                    <p><strong>Equitable adaptation means:</strong> Prioritizing investments in vulnerable communities, ensuring everyone has access to cooling centers and green spaces, and including affected residents in planning decisions.</p>
+                </div>
+
+                <div class="education-block">
+                    <h3>🔗 Learn More</h3>
+                    <ul class="resources-list">
+                        <li><strong>C40 Cities:</strong> Network of megacities committed to climate action with adaptation case studies (c40.org)</li>
+                        <li><strong>Climate Central:</strong> Sea level rise maps and coastal risk analysis (climatecentral.org)</li>
+                        <li><strong>Urban Green-Blue Grids:</strong> Research on nature-based urban water management (urbangreenbluegrids.com)</li>
+                        <li><strong>NOAA Climate.gov:</strong> US climate data, maps, and adaptation resources (climate.gov)</li>
+                        <li><strong>Global Commission on Adaptation:</strong> Reports on adaptation economics and benefits (gca.org)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .education-section {
+            margin: 40px 0 60px 0;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            color: #1f2937;
+        }
+
+        .education-title {
+            font-size: 36px;
+            text-align: center;
+            margin-bottom: 40px;
+            color: #667eea;
+        }
+
+        .education-content {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .education-block {
+            margin-bottom: 40px;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .education-block h3 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .education-block h4 {
+            font-size: 20px;
+            color: #764ba2;
+        }
+
+        .education-block p {
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 15px;
+            color: #374151;
+        }
+
+        .education-block ul,
+        .education-block ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        .education-block li {
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 10px;
+            color: #374151;
+        }
+
+        .education-block strong {
+            color: #1f2937;
+            font-weight: 600;
+        }
+
+        .education-block em {
+            color: #6b7280;
+        }
+
+        .examples-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .example-card {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            text-align: center;
+            color: white;
+        }
+
+        .example-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .example-card h4 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        .example-card p {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.95);
+            line-height: 1.6;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .benefit-item {
+            padding: 20px;
+            background: #f3f4f6;
+            border-radius: 12px;
+            border-left: 4px solid #22c55e;
+        }
+
+        .benefit-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .benefit-item strong {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #22c55e;
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .action-item {
+            padding: 20px;
+            background: #f3f4f6;
+            border-radius: 12px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .action-emoji {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .action-item strong {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #3b82f6;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            padding: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            text-align: center;
+            color: white;
+        }
+
+        .stat-number {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .resources-list {
+            list-style: none;
+            margin-left: 0;
+        }
+
+        .resources-list li {
+            padding: 15px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .education-section {
+                padding: 20px;
+            }
+
+            .education-title {
+                font-size: 28px;
+            }
+
+            .education-block {
+                padding: 20px;
+            }
+
+            .education-block h3 {
+                font-size: 24px;
+            }
+
+            .examples-grid,
+            .benefits-grid,
+            .action-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</body>
+</html>
